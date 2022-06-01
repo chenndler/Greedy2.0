@@ -1,0 +1,46 @@
+body { 
+  font: 14px helvetica neue, helvetica, arial, sans-serif;
+}
+
+#cy-div {
+  height: 95%;
+  width: 95%;
+  left: 0;
+  top: 50;
+  z-index: 900;
+  position: absolute;
+}
+
+#input {
+  width: 15%;
+}
+
+/* .form-inline .my-2 .my-lg-0 {
+  width: 100%;
+  float: left;
+} */
+
+.custom-switch.custom-switch-md {
+  margin-left: 10px;
+}
+
+.custom-switch.custom-switch-md .custom-control-label {
+  padding-left: 2rem;
+  padding-bottom: 1.5rem;
+}
+
+.custom-switch.custom-switch-md .custom-control-label::before {
+  height: 1.5rem;
+  width: calc(2rem + 0.75rem);
+  border-radius: 3rem;
+}
+
+.custom-switch.custom-switch-md .custom-control-label::after {
+  width: calc(1.5rem - 4px);
+  height: calc(1.5rem - 4px);
+  border-radius: calc(2rem - (1.5rem / 2));
+}
+
+.custom-switch.custom-switch-md .custom-control-input:checked ~ .custom-control-label::after {
+  transform: translateX(calc(1.5rem - 0.25rem));
+}
