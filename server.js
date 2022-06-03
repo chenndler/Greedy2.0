@@ -29,10 +29,10 @@ app.use(express.static(path.join(__dirname, 'client')));
 // });
 
 app.post("/greedy", function (req, res) {
-	const { nodes } = req.body;
+	const { nodes, angle } = req.body;
 	console.log(req.body);
 	res.json({
-		elements: calculateGreedy(nodes)
+		elements: calculateGreedy(nodes, angle)
 	});
 });
 

@@ -12,18 +12,60 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <input id="input" class="form-control mr-sm-2" aria-describedby="basic-addon2" type="number" min=0 max=1000 placeholder="Number of nodes"/>
-        <button id="btn-random" type="button" class="btn btn-outline-dark my-2 my-sm-0">Generate Random Graph</button>
-        <button id="btn-add-node" type="button" class="btn btn-outline-dark">Add Node</button>
-        <button id="btn-greedy" type="button" class="btn btn-outline-dark">Calculate Greedy</button>
-        <button id="btn-mst" type="button" class="btn btn-outline-dark">Calculate MST</button>
-        <div class="custom-control custom-switch custom-switch-md">
-            <input type="checkbox" class="custom-control-input" id="customSwitch">
-            <label class="custom-control-label" for="customSwitch">Animate</label>
+    <div id="outer-container">
+        <div id="config" class="config">
+            <div>
+                <label for="input-range-angle" class="form-label">Angle</label>
+                <input type="range" class="form-range" min="0" max="360" value="90" id="input-range-angle">
+                <input class="inputNumber" type="number" min="0" max="360" value="90" id="input-angle" />
+            </div>
+            <div>
+                <label for="input-speed" class="form-label">Speed</label>
+                <input type="range" class="form-range" min="1" max="100" value="1" id="input-range-speed">
+                <input class="inputNumber" type="number" min="1" max="100" value="1" id="input-speed" />
+            </div>
+            <!-- <div>
+                <label for="input-size" class="form-label">Node Size</label>
+                <input type="range" class="form-range" min="1" max="100" value="1" id="input-range-size">
+                <input class="inputNumber" type="number" min="1" max="100" value="1" id="input-size" />
+            </div> -->
+            <div id="bottom-buttons">
+                <input class="input" type="text" id="input-load" placeholder="Path" />
+                <button id="btn-load" type="button" class="btn btn-primary my-2 my-sm-0">Load Graph</button>
+                <input class="input" type="text" id="input-save" placeholder="Path" />
+                <button id="btn-save" type="button" class="btn btn-primary my-2 my-sm-0">Save Graph</button>
+            </div>
         </div>
-    </nav>
-    <div id="cy-div"></div>
+        <div id="content">
+            <nav id="top-nav" class="navbar navbar-expand-lg navbar-light bg-light">
+                <input id="input-random" class="form-control mr-sm-2" aria-describedby="basic-addon2" type="number" min=0 max=1000 placeholder="Number of nodes"/>
+                <button id="btn-random" type="button" class="btn btn-outline-dark my-2 my-sm-0">Generate Random Graph</button>
+                <button id="btn-remove" type="button" class="btn btn-outline-dark my-2 my-sm-0">Remove Edges</button>
+                <button id="btn-fit" type="button" class="btn btn-outline-dark my-2 my-sm-0">Fit</button>
+                <button id="btn-greedy" type="button" class="btn btn-outline-dark">Calculate Greedy</button>
+                <button id="btn-mst" type="button" class="btn btn-outline-dark">Calculate MST</button>
+                <!-- <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-outline-dark active">
+                      <input type="radio" name="options" id="option1" autocomplete="off" checked> Active
+                    </label>
+                    <label class="btn btn-outline-dark">
+                      <input type="radio" name="options" id="option2" autocomplete="off"> Radio
+                    </label>
+                    <label class="btn btn-outline-dark">
+                      <input type="radio" name="options" id="option3" autocomplete="off"> Radio
+                    </label>
+                  </div> -->
+                <div class="custom-control custom-switch custom-switch-md">
+                    <input type="checkbox" class="custom-control-input" id="customSwitch">
+                    <label class="custom-control-label" for="customSwitch">Animate</label>
+                </div>
+            </nav>
+            <div id="cy-div"></div>
+            <div>
+                <p class="font-weight-bold" id="output"></p>
+            </div>
+        </div>
+    </div>
 <!-- Load application code at the end to ensure DOM is loaded -->
 <script src="/js/bundle.js"></script>
 <script>

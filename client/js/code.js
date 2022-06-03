@@ -1,10 +1,12 @@
 const Queue = require('../../utils/queue');
+let timeout = 1000
 
 const cy = cytoscape({
     container: document.getElementById('cy-div'),
 
     boxSelectionEnabled: false,
     autounselectify: true,
+    animate: true,
 
     style: cytoscape.stylesheet()
         .selector('node')
@@ -45,13 +47,13 @@ const cy = cytoscape({
 const queue = new Queue();
 let num = 0;
 
+document.getElementById('btn-remove').addEventListener("click", () => cy.remove(cy.elements('edge')));
 document.getElementById('btn-greedy').addEventListener("click", () => calculateGreedy(false));
 document.getElementById('btn-mst').addEventListener("click", () => calculateGreedy(true));
-document.getElementById('btn-add-node').addEventListener("click", addNode);
 const btnRandom = document.getElementById('btn-random');
 btnRandom.addEventListener("click",  makeRandomGraph);
 
-document.getElementById("input").addEventListener("keypress", function(event) {
+document.getElementById("input-random").addEventListener("keypress", function(event) {
   if (event.key === "Enter") {
     event.preventDefault();
     btnRandom.click();
@@ -69,7 +71,7 @@ function generateRandomGraph(numberOfNodes) {
 }
 
 function generateRandomNode(index) {
-    return {group: "nodes", data: { id: `${index}` }, position: generateRandomPosition() };
+    return {group: "nodes", data: { id: `${index}` } }; // , position: generateRandomPosition()
 }
 
 function generateRandomPosition() {
@@ -79,22 +81,22 @@ function generateRandomPosition() {
     return {x, y};
 }
 
-function addNode() {
-    // const data = {}
-    // const url = "/add_node"
-    // const func = (node) => {
-    //     console.log(node)
-    //     cy.add([node]);
-    // };
+// function addNode() {
+//     // const data = {}
+//     // const url = "/add_node"
+//     // const func = (node) => {
+//     //     console.log(node)
+//     //     cy.add([node]);
+//     // };
 
-    // sendJSON(data, url, func)
-    node = generateRandomNode(num);
-    cy.add([node]);
-    num += 1;
-}
+//     // sendJSON(data, url, func)
+//     node = generateRandomNode(num);
+//     cy.add([node]);
+//     num += 1;
+// }
 
 function makeRandomGraph() {
-    numberOfNodes = document.getElementById('input').value;
+    numberOfNodes = document.getElementById('input-random').value;
     console.log(numberOfNodes);
     cy.elements().remove();
     num = 0;
@@ -111,15 +113,22 @@ function makeRandomGraph() {
         num = numberOfNodes;
         nodes = generateRandomGraph(num);
         console.log(nodes);
-        cy.add(nodes); 
+        cy.add(nodes);
+
+        const layout = cy.elements().layout({
+            name: 'random'
+          });
+          
+        layout.run();
+        fitGraph();
     }
 }
 
 function addEdge() {
     edge = queue.dequeue();
     cy.add([edge]);
-    if(!queue.isEmpty()) {
-        setTimeout(addEdge, 1000);
+    if (!queue.isEmpty()) {
+        setTimeout(addEdge, timeout);
     }
 }
 
@@ -136,8 +145,9 @@ function addEdges(edges) {
 }
 
 function calculateGreedy(returnMST) {
-    cy.remove('edge[true]');
+    cy.remove(cy.elements('edge'));
 
+    const angle = document.getElementById('input-range-angle').value;
     const nodes = cy.nodes().map(elem => {
         p = elem._private;
         return {
@@ -146,18 +156,16 @@ function calculateGreedy(returnMST) {
         };
     });
     console.log(nodes);
-    const data = {nodes};
+    const data = {nodes, angle};
     const url = "/greedy";
     const func = (res) =>  {
         const {elements} = res;
-        const {greedy, mst} = elements;
-        let edges = greedy;
-        if (returnMST) {
-            console.log("should work")
-            edges = mst;
-        }
+        const {greedy, mst, weights} = elements;
+        const output = document.getElementById("output");
+        output.innerText = `GREEDY: ${weights.greedy}, MST: ${weights.mst}, APPROXIMATION: ${weights.greedy / weights.mst}`
 
-        console.log(edges);
+        const edges = returnMST ? mst : greedy;
+
         addEdges(edges); 
     };
 
@@ -231,3 +239,70 @@ cy.on('tap', function (e) {
 
 // // kick off first highlight
 // highlightNextEle();
+
+
+const rangeAngle = document.getElementById('input-range-angle');
+const fieldAngle = document.getElementById('input-angle');
+
+rangeAngle.addEventListener('input', function (e) { fieldAngle.value = e.target.value; });
+fieldAngle.addEventListener('input', function (e) { rangeAngle.value = e.target.value; });
+
+const rangeSpeed = document.getElementById('input-range-speed');
+const fieldSpeed = document.getElementById('input-speed');
+
+rangeSpeed.addEventListener('input', function (e) { 
+    fieldSpeed.value = e.target.value; 
+    timeout = 1000 / e.target.value;
+});
+fieldSpeed.addEventListener('input', function (e) { 
+    rangeSpeed.value = e.target.value; 
+    timeout = 1000 / e.target.value;
+
+});
+
+// const rangeSize = document.getElementById('input-range-size');
+// const fieldSize = document.getElementById('input-size');
+
+// rangeSize.addEventListener('input', function (e) { 
+//     fieldSize.value = e.target.value; 
+//     setNodeSize(e.target.value);
+// });
+// fieldSize.addEventListener('input', function (e) { 
+//     rangeSize.value = e.target.value; 
+//     setNodeSize(e.target.value);
+// });
+
+// const setNodeSize = (size) => {
+//     cy.nodes().forEach((node) => {
+//         console.log(node.data());
+//         node.data('width', size);
+//         node.data('height', size); 
+//     });
+
+//     cy.resize();
+// }
+
+// const spcaeNodes = (x) => {
+//     cy.nodes().layout({
+//         name: 'preset',
+//         animate: true,
+//         fit: false,
+//         transform: (node) => {
+//           let position = {};
+//           position.x = node.position('x') * x;
+//           position.y = node.position('y') * x;
+//           return position;
+//         }
+//       }).run();
+
+//     cy.fit();
+// }
+
+const fitGraph = () => {
+    cy.maxZoom(1);
+    cy.fit();
+    cy.maxZoom(100);
+    cy.zoom(cy.zoom() - 0.2);
+}
+
+document.getElementById('btn-fit').addEventListener("click", fitGraph);

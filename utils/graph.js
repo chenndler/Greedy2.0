@@ -5,7 +5,8 @@ const calculateEdgeAngle = (sourcePos, targetPos) => {
 };
 
 const calculateAngle = (posX, posY, posZ) => {
-  return calculateEdgeAngle(posX, posZ) - calculateEdgeAngle(posX, posY);
+  const angle = calculateEdgeAngle(posX, posZ) - calculateEdgeAngle(posX, posY);
+  return angle < 0 ? 360 + angle : angle;
 };
 
 
@@ -44,8 +45,8 @@ module.exports = class Graph {
                                     this.positions[edges.at(-1)]);
       for (let i = 0; i < edges.length - 1; i++) {
         const angle = calculateAngle(this.positions[source], 
-                                     this.positions[edges[i]], 
-                                     this.positions[edges[i+1]]);
+                                     this.positions[edges[i+1]], 
+                                     this.positions[edges[i]]);
         if (angle < minAngle) {
           minAngle = angle;
         }
