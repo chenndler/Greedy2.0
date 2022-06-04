@@ -2,6 +2,7 @@
 const Queue = require('../../utils/queue');
 let timeout = 1000
 
+
 const cy = cytoscape({
     container: document.getElementById('cy-div'),
 
@@ -45,23 +46,51 @@ const cy = cytoscape({
     }
 });
 
+const ur = cy.undoRedo();
+
+function KeyPress(e) {
+    if (e.keyCode == 89 && e.ctrlKey) ur.redo();
+    if (e.keyCode == 90 && e.ctrlKey) ur.undo();
+}
+
+document.onkeydown = KeyPress
+
 const queue = new Queue();
 let num = 0;
 
-document.getElementById('btn-remove').addEventListener("click", () => cy.remove(cy.elements('edge')));
+
+document.getElementById('btn-random').addEventListener("click", makeRandomGraph);
+document.getElementById('btn-remove').addEventListener("click", () => ur.do("remove", cy.elements('edge')));
+document.getElementById('btn-fit').addEventListener("click", fitGraph);
 document.getElementById('btn-greedy').addEventListener("click", () => calculateGreedy(false));
 document.getElementById('btn-mst').addEventListener("click", () => calculateGreedy(true));
-const btnRandom = document.getElementById('btn-random');
-btnRandom.addEventListener("click",  makeRandomGraph);
-
 document.getElementById("input-random").addEventListener("keypress", function(event) {
   if (event.key === "Enter") {
     event.preventDefault();
-    btnRandom.click();
+    makeRandomGraph();
   }
 });
 
-// let random_btn = document.getElementById('btn-random');
+const rangeAngle = document.getElementById('input-range-angle');
+const fieldAngle = document.getElementById('input-angle');
+
+rangeAngle.addEventListener('input', function (e) { fieldAngle.value = e.target.value; });
+fieldAngle.addEventListener('input', function (e) { rangeAngle.value = e.target.value; });
+
+const rangeSpeed = document.getElementById('input-range-speed');
+const fieldSpeed = document.getElementById('input-speed');
+
+rangeSpeed.addEventListener('input', function (e) { 
+    fieldSpeed.value = e.target.value; 
+    timeout = 1000 / e.target.value;
+});
+fieldSpeed.addEventListener('input', function (e) { 
+    rangeSpeed.value = e.target.value; 
+    timeout = 1000 / e.target.value;
+
+});
+
+
 
 function generateRandomGraph(numberOfNodes) {
     nodes = [];
@@ -75,12 +104,12 @@ function generateRandomNode(index) {
     return {group: "nodes", data: { id: `${index}` } }; // , position: generateRandomPosition()
 }
 
-function generateRandomPosition() {
-    const x = Math.random() * 900 + 100;
-    const y = Math.random() * 400 + 100;
+// function generateRandomPosition() {
+//     const x = Math.random() * 900 + 100;
+//     const y = Math.random() * 400 + 100;
     
-    return {x, y};
-}
+//     return {x, y};
+// }
 
 // function addNode() {
 //     // const data = {}
@@ -98,7 +127,6 @@ function generateRandomPosition() {
 
 function makeRandomGraph() {
     numberOfNodes = document.getElementById('input-random').value;
-    console.log(numberOfNodes);
     cy.elements().remove();
     num = 0;
     if (numberOfNodes > 0 && numberOfNodes < 1000) {
@@ -113,8 +141,7 @@ function makeRandomGraph() {
 
         num = numberOfNodes;
         nodes = generateRandomGraph(num);
-        console.log(nodes);
-        cy.add(nodes);
+        ur.do("add", nodes);
 
         const layout = cy.elements().layout({
             name: 'random'
@@ -125,9 +152,16 @@ function makeRandomGraph() {
     }
 }
 
+function fitGraph() {
+    cy.maxZoom(1);
+    cy.fit();
+    cy.maxZoom(100);
+    cy.zoom(cy.zoom() - 0.2);
+}
+
 function addEdge() {
     edge = queue.dequeue();
-    cy.add([edge]);
+    ur.do("add", [edge]);
     if (!queue.isEmpty()) {
         setTimeout(addEdge, timeout);
     }
@@ -136,17 +170,16 @@ function addEdge() {
 
 function addEdges(edges) {
     animate = document.getElementById("customSwitch").checked ;
-    console.log(animate);
     if (animate == true) {
         queue.enqueue(edges);
         addEdge();
     } else {
-        cy.add(edges);
+        ur.do("add", edges);
     }
 }
 
 function calculateGreedy(returnMST) {
-    cy.remove(cy.elements('edge'));
+    ur.do("remove", cy.elements('edge'));
 
     const angle = document.getElementById('input-range-angle').value;
     const nodes = cy.nodes().map(elem => {
@@ -156,7 +189,6 @@ function calculateGreedy(returnMST) {
             position: p.position
         };
     });
-    console.log(nodes);
     const data = {nodes, angle};
     const url = "/greedy";
     const func = (res) =>  {
@@ -183,33 +215,29 @@ function sendJSON(data, url, func) {
     xhr.onreadystatechange = () => {
         if (xhr.readyState === 4 &&
             xhr.status === 200) {
-            console.log('hey')
-            console.log(xhr.responseText);
             func(JSON.parse(xhr.responseText));
         }
     }
 }
 
-cy.on('free', 'node', (e) => {
-    let item = e.target;
-    if (item.isNode()) {
-        console.log(item._private.position)
-    }
-})
+// cy.on('free', 'node', (e) => {
+//     let item = e.target;
+//     if (item.isNode()) {
+//         console.log(item._private.position);
+//     }
+// })
 
 
 cy.on('tap', function (e) {
-    console.log(e)
     if (e.target === cy) {            
         // const offset = $("cy").offset();
-        // console.log(offset);
         const position = {
             x: e.position.x,
             y: e.position.y
         };
         
         console.log(position);
-        cy.add([{
+        ur.do("add", [{
             group: "nodes",
             data: {
                 id: num.toString()
@@ -220,7 +248,7 @@ cy.on('tap', function (e) {
         num += 1
     } 
     else {
-        e.target.remove()
+        ur.do("remove", e.target);
     }
 });
 
@@ -241,25 +269,6 @@ cy.on('tap', function (e) {
 // // kick off first highlight
 // highlightNextEle();
 
-
-const rangeAngle = document.getElementById('input-range-angle');
-const fieldAngle = document.getElementById('input-angle');
-
-rangeAngle.addEventListener('input', function (e) { fieldAngle.value = e.target.value; });
-fieldAngle.addEventListener('input', function (e) { rangeAngle.value = e.target.value; });
-
-const rangeSpeed = document.getElementById('input-range-speed');
-const fieldSpeed = document.getElementById('input-speed');
-
-rangeSpeed.addEventListener('input', function (e) { 
-    fieldSpeed.value = e.target.value; 
-    timeout = 1000 / e.target.value;
-});
-fieldSpeed.addEventListener('input', function (e) { 
-    rangeSpeed.value = e.target.value; 
-    timeout = 1000 / e.target.value;
-
-});
 
 // const rangeSize = document.getElementById('input-range-size');
 // const fieldSize = document.getElementById('input-size');
@@ -299,14 +308,9 @@ fieldSpeed.addEventListener('input', function (e) {
 //     cy.fit();
 // }
 
-const fitGraph = () => {
-    cy.maxZoom(1);
-    cy.fit();
-    cy.maxZoom(100);
-    cy.zoom(cy.zoom() - 0.2);
-}
 
-document.getElementById('btn-fit').addEventListener("click", fitGraph);
+
+
 },{"../../utils/queue":2}],2:[function(require,module,exports){
 module.exports = class Queue {
     constructor() {
