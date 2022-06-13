@@ -23,9 +23,9 @@ const getSortedEdges = (nodeIds, nodePositions) => {
     return edges;
 };
 
-const calculateGreedy = (nodes) => {
-    const graph1 = new Graph(nodes, 90);
-    const graph2 = new Graph(nodes, 90);
+const calculateGreedy = (nodes, angle) => {
+    const graph1 = new Graph(nodes, angle);
+    const graph2 = new Graph(nodes, angle);
 
     const nodeIds = nodes.map((node) => node.id);
     const uf1 = new UnionFind(nodeIds);
@@ -37,11 +37,14 @@ const calculateGreedy = (nodes) => {
     }, {});
 
     const edges = getSortedEdges(nodeIds, nodePositions);
+    let weightGreedy = 0, weightMST = 0;
     const greedy = [];
-    const mst = []
+    const mst = [];
 
     for (const edge of edges) {
         const [u, v] = edge;
+        const weight = calcultateDistance(nodePositions[u], nodePositions[v]);
+
         if (uf1.find(u) != uf1.find(v) && graph1.canAddEdge(u,v)) {
             graph1.addEdge(u, v);
             uf1.union(u, v);
@@ -50,8 +53,11 @@ const calculateGreedy = (nodes) => {
                 data: { 
                     source: u,
                     target: v 
-                }
+                },
+                style: { 'line-color': '#9bd8de' }
             });
+
+            weightGreedy += weight;
         }
 
         if (uf2.find(u) != uf2.find(v)) {
@@ -62,12 +68,22 @@ const calculateGreedy = (nodes) => {
                 data: { 
                     source: u,
                     target: v 
-                }
+                },
+                style: { 'line-color': '#eaa2a2' }
             });
+
+            weightMST += weight;
         }
     }
 
-    return {greedy, mst};
+    return {
+        greedy, 
+        mst,
+        weights: {
+            greedy: weightGreedy,
+            mst: weightMST
+        }
+    };
 };
 
 module.exports = {calculateGreedy};
