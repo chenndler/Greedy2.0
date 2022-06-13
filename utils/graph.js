@@ -47,7 +47,7 @@ module.exports = class Graph {
         const angle = calculateAngle(this.positions[source], 
                                      this.positions[edges[i+1]], 
                                      this.positions[edges[i]]);
-        if (angle < minAngle) {
+        if (angle != 0 && angle < minAngle) {
           minAngle = angle;
         }
       }

@@ -1,13 +1,14 @@
-const generateRandomGraph = (numberOfNodes) => {
+const generateRandomGraph = (numberOfNodes, first) => {
     nodes = [];
     for (let i = 0; i < numberOfNodes; i++) {
-        nodes.push(generateRandomNode(i));
+        nodes.push(generateRandomNode(i, first));
     }
     return { nodes };
 }
 
-const generateRandomNode = (index) => {
-    return { data: { id: `${index}` }, position: generateRandomPosition() };
+const generateRandomNode = (index, first) => {
+    const node = { group: "nodes", data: { id: `n${index + first}`}, position: generateRandomPosition() };
+    return node;
 }
 
 const generateRandomPosition = () => {

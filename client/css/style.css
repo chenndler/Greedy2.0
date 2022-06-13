@@ -11,6 +11,22 @@ body {
   position: fixed;
 }
 
+/* #btn-fix {
+  height: 300px;
+} */
+
+#input-num {
+  width: 60%;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#input-polygon {
+  width: 60%;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
 #input-load {
   width: 60%;
   margin-top: 5px;
@@ -22,9 +38,9 @@ body {
   margin-top: 5px;
   margin-bottom: 5px;}
 
-#btn-load #btn-save {
+/* #btn-load #btn-save {
   margin-bottom: 15px;
-}
+} */
 
 #bottom-buttons{
   bottom: 0;
@@ -34,7 +50,7 @@ body {
 }
 
 #input-random {
-  width: 16%;
+  width: 15.5%;
 }
 
 #outer-container {
@@ -83,6 +99,11 @@ body {
   position: absolute;
 }
 
+.form-control-sm {
+  width: 50px;
+  height: 30px;
+}
+
 #input {
   width: 15%;
 }
@@ -97,8 +118,9 @@ body {
 }
 
 .custom-switch.custom-switch-md .custom-control-label {
-  padding-left: 2rem;
-  padding-bottom: 1.5rem;
+  /* padding-left: 1rem; */
+  padding: 1rem;
+  /* padding-bottom: 1.5rem; */
 }
 
 .custom-switch.custom-switch-md .custom-control-label::before {

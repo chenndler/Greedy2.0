@@ -1,7 +1,9 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const Queue = require('../../utils/queue');
-let timeout = 1000
-
+let timeout = 1000;
+const queue = new Queue();
+let num = 0;
+let p = 0;
 
 const cy = cytoscape({
     container: document.getElementById('cy-div'),
@@ -9,12 +11,11 @@ const cy = cytoscape({
     boxSelectionEnabled: false,
     autounselectify: true,
     animate: true,
-
     style: cytoscape.stylesheet()
         .selector('node')
         .selector('edge')
         .style({
-            'curve-style': 'bezier',
+            // 'curve-style': 'bezier',
             'width': 4,
             'line-color': '#ddd',
             'target-arrow-color': '#ddd'
@@ -27,6 +28,11 @@ const cy = cytoscape({
             'transition-property': 'background-color, line-color, target-arrow-color',
             'transition-duration': '0.5s'
         }),
+
+    layout: { 
+        name: 'cola',
+        avoidOverlap: true 
+    },
     elements: {nodes: [], edges: []},
     // elements: {
     //     nodes: [
@@ -37,16 +43,50 @@ const cy = cytoscape({
     //         { data: { id: 'a"e', weight: 1, source: 'a', target: 'e' } },
     //     ]
     // },
-
-    layout: {
-        name: 'breadthfirst',
-        directed: true,
-        roots: '#a',
-        padding: 10
-    }
 });
 
+let options = {
+    nodesMatching: function( node ){ return true; },
+    reposition: node => {
+        const pos = node.position();
+        return {x: pos.x, y:0};
+    },
+    when: 'matching'
+};
+const rule = cy.automove( options );
+rule.apply();
+rule.disable();
 const ur = cy.undoRedo();
+
+const group = () => {
+    cy.add({ group: "nodes", data: { id: `p${p}`}});
+    let nodes = cy.elements('node[id *= "n"]');
+    if (nodes.every((node) => node._private.data.parent)) {
+        nodes = cy.elements('node[id *= "p"]');
+    }
+    
+    nodes.forEach((node) => {
+        if (!node._private.data.parent) {
+            // console.log(node);
+            node.move({parent: `p${p}`});
+        }
+    });
+    p += 1;
+};
+
+const ungroup = () => {
+    p -= 1;
+    cy.nodes().forEach((node) => {
+        if (node._private.data.parent == `p${p}`) {
+            node.move({parent: null});
+        }
+    });
+    cy.getElementById(`p${p}`).remove();
+};
+
+ur.action("group", group, ungroup); // register
+ur.action("ungroup", ungroup, group); // register
+
 
 function KeyPress(e) {
     if (e.keyCode == 89 && e.ctrlKey) ur.redo();
@@ -55,13 +95,13 @@ function KeyPress(e) {
 
 document.onkeydown = KeyPress
 
-const queue = new Queue();
-let num = 0;
 
 
-document.getElementById('btn-random').addEventListener("click", makeRandomGraph);
+
+document.getElementById('btn-random').addEventListener("click", () => makeRandomGraph(false));
+document.getElementById('btn-random2').addEventListener("click", () => makeRandomGraph(true));
 document.getElementById('btn-remove').addEventListener("click", () => ur.do("remove", cy.elements('edge')));
-document.getElementById('btn-fit').addEventListener("click", fitGraph);
+// document.getElementById('btn-fit').addEventListener("click", fitGraph);
 document.getElementById('btn-greedy').addEventListener("click", () => calculateGreedy(false));
 document.getElementById('btn-mst').addEventListener("click", () => calculateGreedy(true));
 document.getElementById("input-random").addEventListener("keypress", function(event) {
@@ -69,6 +109,73 @@ document.getElementById("input-random").addEventListener("keypress", function(ev
     event.preventDefault();
     makeRandomGraph();
   }
+});
+document.getElementById("option1").addEventListener("change", () => {
+    rule.toggle();
+});
+document.getElementById("option2").addEventListener("change", () => {
+    rule.toggle();
+});
+
+document.getElementById("btn-polygon").addEventListener("click", function() {
+    const numberOfNodes = document.getElementById("input-num-polygon").value;
+    const path = document.getElementById("input-polygon").value;
+    const data = {path, numberOfNodes};
+    const url = "/polygon";
+    const func = (res) => {
+        const { positions } = res;
+        const nodes = [];
+        for (position of positions) {
+            nodes.push({
+                data: { id: `n${num}` },
+                position
+            });
+            num += 1;
+        }
+        ur.do("add", nodes);
+        fitGraph();
+    };
+    sendJSON(data, url, func);
+});
+
+document.getElementById("btn-load").addEventListener("click", function() {
+    const path = document.getElementById("input-load").value;
+    const data = { path };
+    const url = "/load";
+    const func = (res) =>  {
+        const {positions} = res;
+        const nodes = [];
+        for (position of positions) {
+            nodes.push({
+                data: { id: `n${num}` },
+                position
+            });
+            num += 1;
+        }
+        ur.do("add", nodes);
+        fitGraph();
+    };
+    sendJSON(data, url, func);
+});
+
+document.getElementById("btn-save").addEventListener("click", function() {
+    const path = document.getElementById("input-save").value;
+    const positions = cy.nodes().map(elem => elem._private.position);
+    const data = { positions, path };
+    const url = "/save";
+    sendJSON(data, url, function (res) {
+        const {done} = res;
+        if (done) {
+            alert("saved graph");
+        }
+        else {
+            alert("problem saving graph");
+        }
+    });
+});
+
+document.getElementById("btn-group").addEventListener("click", function() {
+    ur.do("group", []);
 });
 
 const rangeAngle = document.getElementById('input-range-angle');
@@ -90,19 +197,73 @@ fieldSpeed.addEventListener('input', function (e) {
 
 });
 
+const changeStyle = (value) => {
+    cy.style()
+     .fromJson([
+       {
+         selector: 'node',
+         style: {
+            'height': value,
+            'width': value
+         }
+       },
+       {
+            selector: 'edge',
+            style: {
+            'width': 4 * value / 30
+            }
+       }
+     ]).update();
+};
+
+const rangeSize = document.getElementById('input-range-size');
+const fieldSize = document.getElementById('input-size');
+
+rangeSize.addEventListener('input', function (e) {
+     fieldSize.value = e.target.value; 
+     changeStyle(e.target.value);
+     //  cy.nodes().forEach((node) => {
+    //         node.style({
+    //             'width': e.target.value,
+    //             'height': e.target.value
+    //         });
+    //     }
+    // );
+    // cy.elements('edge').forEach((edge) => {
+    //     edge.style({
+    //         width: 4 * e.target.value / 30
+    //     });
+    // });
+});
+fieldSize.addEventListener('input', function (e) {
+     rangeSize.value = e.target.value; 
+     changeStyle(e.target.value);
+     //  cy.nodes().forEach((node) => {
+    //         node.style({
+    //             'width': e.target.value,
+    //             'height': e.target.value
+    //         });
+    //     }
+    //  );
+    //  cy.elements('edge').forEach((edge) => {
+    //      edge.style({
+    //          width: 4 * e.target.value / 30
+    //      });
+    //  });
+});
 
 
-function generateRandomGraph(numberOfNodes) {
-    nodes = [];
-    for (let i = 0; i < numberOfNodes; i++) {
-        nodes.push(generateRandomNode(i));
-    }
-    return nodes
-}
+// function generateRandomGraph(numberOfNodes) {
+//     nodes = [];
+//     for (let i = 0; i < numberOfNodes; i++) {
+//         nodes.push(generateRandomNode(i));
+//     }
+//     return nodes
+// }
 
-function generateRandomNode(index) {
-    return {group: "nodes", data: { id: `${index}` } }; // , position: generateRandomPosition()
-}
+// function generateRandomNode(index) {
+//     return {group: "nodes", data: { id: `${index}` } }; // , position: generateRandomPosition()
+// }
 
 // function generateRandomPosition() {
 //     const x = Math.random() * 900 + 100;
@@ -125,30 +286,34 @@ function generateRandomNode(index) {
 //     num += 1;
 // }
 
-function makeRandomGraph() {
+function makeRandomGraph(append) {
     numberOfNodes = document.getElementById('input-random').value;
-    cy.elements().remove();
-    num = 0;
+    if (!append) {
+        p = 0;
+        num = 0;
+        ur.do("remove", cy.elements());
+    }
+    num += numberOfNodes;
     if (numberOfNodes > 0 && numberOfNodes < 1000) {
-        // const data = {numberOfNodes}
-        // const url = "/random"
-        // const func = (elements) =>  {
-        //     const {nodes} = elements;
-        //     console.log(nodes)
-        //     cy.add(nodes); 
-        // };
-        // sendJSON(data, url, func)
+        const data = {numberOfNodes, append, num}
+        const url = "/random"
+        const func = (elements) =>  {
+            const {nodes} = elements;
+            // cy.add(nodes); 
+            ur.do("add", nodes);
+            fitGraph();
+        };
+        sendJSON(data, url, func)
 
-        num = numberOfNodes;
-        nodes = generateRandomGraph(num);
-        ur.do("add", nodes);
+        // num = numberOfNodes;
+        // nodes = generateRandomGraph(num);
+        // ur.do("add", nodes);
 
-        const layout = cy.elements().layout({
-            name: 'random'
-          });
+        // const layout = cy.elements().layout({
+        //     name: 'random'
+        //   });
           
-        layout.run();
-        fitGraph();
+        // layout.run();
     }
 }
 
@@ -182,11 +347,11 @@ function calculateGreedy(returnMST) {
     ur.do("remove", cy.elements('edge'));
 
     const angle = document.getElementById('input-range-angle').value;
-    const nodes = cy.nodes().map(elem => {
-        p = elem._private;
+    const nodes = cy.elements('node[id*="n"]').map(elem => {
+        const privateElem = elem._private;
         return {
-            id: p.data.id,
-            position: p.position
+            id: privateElem.data.id,
+            position: privateElem.position
         };
     });
     const data = {nodes, angle};
@@ -229,26 +394,36 @@ function sendJSON(data, url, func) {
 
 
 cy.on('tap', function (e) {
+    console.log(e.position);
     if (e.target === cy) {            
         // const offset = $("cy").offset();
         const position = {
             x: e.position.x,
             y: e.position.y
         };
-        
-        console.log(position);
         ur.do("add", [{
             group: "nodes",
             data: {
-                id: num.toString()
+                id: `n${num}`
             },
             position
         }]);    
         
         num += 1
     } 
-    else {
-        ur.do("remove", e.target);
+    else { 
+        const targetId = e.target._private.data.id;
+        if (targetId.startsWith('p')) {
+            cy.nodes().forEach((node) => {
+                if (node._private.data.parent == targetId) {
+                    // console.log(node);
+                    node.move({parent: null});
+                }
+            });
+            cy.remove(e.target);
+        } else {
+            ur.do("remove", e.target);
+        }
     }
 });
 
