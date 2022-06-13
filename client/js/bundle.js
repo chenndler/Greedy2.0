@@ -46,7 +46,7 @@ const cy = cytoscape({
 });
 
 let options = {
-    nodesMatching: function( node ){ return true; },
+    nodesMatching: function( node ){ return node._private.data.id.startsWith('n'); },
     reposition: node => {
         const pos = node.position();
         return {x: pos.x, y:0};
