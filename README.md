@@ -32,4 +32,3 @@ $ npm start
 ```
 
 Than, go to <http://localhost:3000/> at your favorite browser.
->>>>>>> 9eec7ae6dc3d52a9461657412478040d6fdabda2
